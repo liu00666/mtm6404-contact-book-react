@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { collection, addDoc } from 'firebase/firestore';
-import { db } from '../firebase';
+import { addContact } from '../db';
 import './ContactForm.css';
 
 const ContactForm = () => {
@@ -64,9 +63,10 @@ const ContactForm = () => {
     setLoading(true);
     
     try {
-      const docRef = await addDoc(collection(db, 'contacts'), {
-        ...formData,
-        createdAt: new Date()
+      const docRef = await addContact({
+        firstName: formData.firstName,
+        lastName: formData.lastName,
+        email: formData.email
       });
       
       // Navigate to the new contact's detail view

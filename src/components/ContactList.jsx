@@ -1,13 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { collection, getDocs, orderBy, query } from 'firebase/firestore';
-import { db } from '../firebase';
+import { getContacts } from '../db';
+import { populateDatabase } from '../populateDb';
 import './ContactList.css';
 
 const ContactList = () => {
   const [contacts, setContacts] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [loading, setLoading] = useState(true);
+  const [populating, setPopulating] = useState(false);
 
   useEffect(() => {
     fetchContacts();
@@ -15,18 +16,30 @@ const ContactList = () => {
 
   const fetchContacts = async () => {
     try {
-      const contactsRef = collection(db, 'contacts');
-      const q = query(contactsRef, orderBy('lastName'));
-      const querySnapshot = await getDocs(q);
-      const contactsData = querySnapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data()
-      }));
+      const contactsData = await getContacts();
       setContacts(contactsData);
       setLoading(false);
     } catch (error) {
       console.error('Error fetching contacts:', error);
       setLoading(false);
+    }
+  };
+
+  const handlePopulateDatabase = async () => {
+    setPopulating(true);
+    console.log('Starting to populate database...');
+    try {
+      await populateDatabase();
+      console.log('Database populated, now refreshing contacts...');
+      // Refresh the contacts list after populating
+      await fetchContacts();
+      console.log('Contacts refreshed successfully');
+      alert('Database populated successfully with sample contacts!');
+    } catch (error) {
+      console.error('Error populating database:', error);
+      alert('Error populating database. Check console for details.');
+    } finally {
+      setPopulating(false);
     }
   };
 
@@ -43,7 +56,17 @@ const ContactList = () => {
     <div className="contact-list">
       <div className="contact-list-header">
         <h2>All Contacts</h2>
-        <Link to="/add" className="add-contact-btn">Add New Contact</Link>
+        <div className="header-buttons">
+          <button 
+            onClick={handlePopulateDatabase} 
+            className="populate-btn"
+            style={{ marginRight: '10px' }}
+            disabled={populating}
+          >
+            {populating ? 'Populating...' : 'Populate DB'}
+          </button>
+          <Link to="/add" className="add-contact-btn">Add New Contact</Link>
+        </div>
       </div>
       
       <div className="search-container">
